@@ -1,0 +1,6 @@
+name = Berloga module
+description = Developed by Marat Farkhulin (marat.farkhulin@gmail.com).
+core = 7.x
+
+stylesheets[all][] = css/berloga_module.css
+scripts[] = js/berloga_module.js

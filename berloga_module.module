@@ -1,0 +1,281 @@
+<?php
+/**
+ * Implements hook_menu().
+ */
+function berloga_module_menu() {
+  $items = array();
+  $items['berloga_price'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => t('Berloga Price'),
+    'description' => t('Berloga Price'),
+    'page callback' => 'berloga_module_price',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+  );
+  $items['berloga_price_update'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => t('Berloga Pric Update'),
+    'description' => t('Berloga Price Update'),
+    'page callback' => 'berloga_price_update',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+  );
+  $items['berloga_product'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => t('Product Information'),
+    'description' => t('Product Information'),
+    'page callback' => 'berloga_module_product',
+    'access callback' => 'user_access',
+    'access arguments' => array('access content'),
+  );
+  $items['admin/berloga_price'] = array(
+    'title' => 'Прайс',
+    'description' => 'Прайс',
+    'position' => 'left',
+    'weight' => 100,
+    'page callback' => 'berloga_module_price',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['sitemap'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => t('Карта сайта'),
+    'description' => t('Sitemap'),
+    'page callback' => 'berloga_module_sitemap',
+    'access callback' => 'user_access',
+    'access arguments' => array('access content'),
+  );
+
+  return $items;
+}
+
+/**
+ * Page callback.
+ */
+function berloga_module_product() {
+  header('Content-Type: application/json');
+
+  $product = db_query("
+  SELECT pd.field_product_door_product_id FROM field_data_field_product_door AS pd
+  INNER JOIN field_data_field_front_panel_variant do ON do.entity_id = pd.field_product_door_product_id
+  INNER JOIN field_data_field_inner_panel di ON di.entity_id = pd.field_product_door_product_id
+  WHERE pd.entity_id = ".$_GET['nid']."
+  AND do.field_front_panel_variant_tid = ".$_GET['outterTid']."
+  AND di.field_inner_panel_tid = ".$_GET['innerTid']."
+  ")->fetchField();
+
+  if ($product != '') {
+    $productImage = db_query("
+      SELECT ii.field_item_img_fid FROM field_data_field_item_img AS ii
+      WHERE ii.entity_id = ".$product." ORDER BY field_item_img_fid DESC
+    ")->fetchField();
+    $file = file_load($productImage);
+    $uri = $file->uri;
+    $fileURL = explode('//', $file->uri);
+    $url = file_create_url($uri);
+    $productPrice = db_query("
+      SELECT cp.commerce_price_amount FROM field_data_commerce_price AS cp
+      WHERE cp.entity_id = ".$product."
+    ")->fetchField();
+    $productPrice = mb_substr($productPrice, 0, -2);
+    $productOldPrice = db_query("
+      SELECT op.field_old_price_amount FROM field_data_field_old_price AS op
+      WHERE op.entity_id = ".$product."
+    ")->fetchField();
+    $productOldPrice = mb_substr($productOldPrice, 0, -2);
+    $productTitle = db_query("
+      SELECT c.title FROM commerce_product AS c
+      WHERE c.product_id = ".$product."
+    ")->fetchField();
+  }
+
+  $jsonData = array('title' => $productTitle, 'pid' => $product, 'img' => $fileURL[1], 'p' => $productPrice, 'o' => $productOldPrice);
+
+  echo json_encode($jsonData);
+}
+
+function berloga_price_update() {
+  if (isset($_GET['pid'])) {
+    $pid = $_GET['pid'];
+    if (isset($_GET['price'])) {
+      $price = $_GET['price'].'00';
+      db_query("UPDATE field_data_commerce_price SET commerce_price_amount = :price WHERE entity_id = :pid", array(':price' => $price, ':pid' => $pid));
+    }
+    if (isset($_GET['oldprice'])) {
+      $oldPrice = $_GET['oldprice'].'00';
+      $query = db_query("SELECT field_old_price_amount FROM field_data_field_old_price WHERE entity_id = :pid", array(':pid' => $pid))->fetchField();
+      // print_r ($query);
+      if ($query != '' && $_GET['oldprice'] != '' && $_GET['oldprice'] > 0) {
+        db_query("UPDATE field_data_field_old_price SET field_old_price_amount = :oldprice WHERE entity_id = :pid", array(':oldprice' => $oldPrice, ':pid' => $pid));
+      } else if ($_GET['oldprice'] != '' && $_GET['oldprice'] > 0) {
+        $temp = 'a:1:{s:10:"components";a:0:{}}';
+        db_query("INSERT INTO field_data_field_old_price (entity_type, bundle, deleted, entity_id, revision_id, language, delta, field_old_price_amount, field_old_price_currency_code, field_old_price_data) VALUES ('commerce_product', 'door', '0', :pid, :pid, 'und', '0', :oldprice, 'RUB', :temp)", array(':oldprice' => $oldPrice, ':pid' => $pid, ':temp' => $temp));
+      }
+    }
+    print ('success');
+  }
+}
+
+function berloga_module_price() {
+  $queryAnd = '';
+  if (isset($_POST['catalog'])) {
+    $_SESSION['berloga_price_catalog'] = $_POST['catalog'];
+  }
+
+  if (isset($_SESSION['berloga_price_catalog'])) {
+    if ($_SESSION['berloga_price_catalog'] != 0) {
+      $queryAnd = " AND fc.field_category_tid = ".$_SESSION['berloga_price_catalog'];
+    }
+  }
+
+  $vocabulary = taxonomy_vocabulary_machine_name_load('categories');
+  $terms = entity_load('taxonomy_term', FALSE, array('vid' => $vocabulary->vid));
+
+  $catalog = '<select name="catalog"><option value="0">- Весь каталог -</option>';
+  foreach ($terms as $key => $value) {
+    $selected = '';
+    if ($_SESSION['berloga_price_catalog'] == $value->tid) {
+      $selected = ' selected="selected"';
+    }
+    $catalog .= '<option value="'.$value->tid.'" '.$selected.'>'.$value->name.'</option>';
+  }
+  $catalog .= '</select>';
+
+  $nodes = db_query("
+    SELECT DISTINCT n.title, n.nid FROM node AS n
+    INNER JOIN field_data_field_category fc ON fc.entity_id = n.nid
+    WHERE n.type = 'item' ".$queryAnd."
+  ")->fetchAll();
+
+  $nodesCount = count($nodes);
+
+  $content = '<h2>Всего карточек товаров в базе: '.$nodesCount.'</h2>';
+  $content .= '<form action="" method="POST">Фильтр: '.$catalog.'<input type="submit" value="Применить" name="submit-filter"/></form>';
+  $content .= '<table class="price-table" id="price-table"><thead><tr><th>#</th><th>Нименование Товара</th><th>Вариации товара</th><th>Цена</th><th>Старая цена</th><th>Действия</th></tr></thead><tbody>';
+  $rowCount = 1;
+  foreach ($nodes as $card) {
+    $alias = drupal_get_path_alias('node/'.$card->nid);
+    $content .= '<tr class="product-card"><td>#'.$rowCount.' </td><td colspan="5"><a href="/'.$alias.'" class="product-card-link">'.$card->title.'</a> (<a href="/node/'.$card->nid.'/edit" class="product-card-link-edit" target="_blank">ред.</a>)</td></tr>';
+    $products = db_query("
+    SELECT pd.field_product_door_product_id, p.title, cp.commerce_price_amount FROM field_data_field_product_door AS pd
+    INNER JOIN commerce_product p ON p.product_id = pd.field_product_door_product_id
+    INNER JOIN field_data_commerce_price cp ON cp.entity_id=pd.field_product_door_product_id
+    WHERE pd.entity_id = ".$card->nid."
+    ")->fetchAll();
+    if (count($products) > 0) {
+      foreach ($products as $product) {
+        $old_price = db_query("
+        SELECT op.field_old_price_amount FROM field_data_field_old_price AS op
+        WHERE op.entity_id = ".$product->field_product_door_product_id."
+        ")->fetchField();
+        $old_price = mb_substr($old_price, 0, -2);
+        $price = mb_substr($product->commerce_price_amount, 0, -2);
+        if ($old_price != '') {
+          $old_price = '<input class="input-price old-price" type="number" value="'.$old_price.'"/>';
+        } else {
+          $old_price = '<input class="input-price old-price" type="number" value=""/>';
+        }
+        $price = '<input class="input-price current-price" type="number" value="'.$price.'"/>';
+        // if ($old_price != '') {
+          $content .= '<tr class="product-card-item"><td></td><td></td><td>'.$product->title.' (<a href="/admin/commerce/products/'.$product->field_product_door_product_id.'/edit" target="_blank">ред.</a>)</td><td>'.$price.'</td><td>'.$old_price.'</td><td><button class="price-update" data-pid="'.$product->field_product_door_product_id.'">Обновить</button></td></tr>';
+        // } else {
+          // $content .= '<tr class="product-card-item"><td></td><td></td><td>'.$product->title.' (<a href="/admin/commerce/products/'.$product->field_product_door_product_id.'/edit" target="_blank">ред.</a>)</td><td></td><td>'.$price.'</td><td><button class="price-update" data-pid="'.$product->field_product_door_product_id.'">Обновить</button></td></tr>';
+        // }
+      }
+    } else {
+      $content .= '<tr class="product-card-no-item"><td></td><td colspan="5"><p class="error">У данного товара еще нет вариаций! Он не будет отображен в каталоге!</p></td></tr>';
+    }
+    $rowCount++;
+  }
+
+  $content .= '</tbody></table><div class="fixed-thead-holder"><table class="price-table" id="header-fixed"></table></div>';
+
+  $pager = 0;
+
+  return  theme('berloga_module_price', array('content' => $content , 'pager' => $pager));
+  // call a theme or you have no pass any argument in theme to change a 'nodes'=> NULL or 'pager'=>NULL
+}
+
+function berloga_module_theme() {
+  return array(
+    'berloga_module_price' => array(
+      'template' => 'berloga-price',
+      'variables' => array('nodes' => NULL,'pager' => NULL),
+      'path' => drupal_get_path('module', 'berloga_module').'/templates'
+    ),
+  );
+}
+
+function berloga_module_query_alter(QueryAlterableInterface $query) {
+  if ($query->hasTag('views')) {
+    static $count;
+    $view =& $query->getMetaData('view');
+
+    if (strstr($groupby = $view->query->options['query_comment'], 'groupby')) {
+      list($action, $field) = explode(':', $groupby);
+
+      if (strlen($field) > 0) {
+        $query->groupBy($field);
+      }
+    }
+  }
+}
+
+function berloga_module_sitemap() {
+  $menu = menu_load_links('main-menu');
+  $content = '';
+
+  $content .= '<!--<h1>Карта  сайта</h1>--><h3>Главное меню</h3><ul>';
+
+  foreach ($menu as $link) {
+    if ($link['plid'] == 0 && $link['hidden'] == 0) {
+      if ($link['link_path'] == '<front>') {
+        $link['link_path'] = '/';
+      }
+      $url = drupal_get_path_alias($link['link_path']);
+      $nodes = '';
+      if ($url == 'news') {
+        $news = db_query("
+        SELECT title, nid FROM node WHERE type = 'article' AND status = 1
+        ")->fetchAll();
+
+        $nodes .= '<ul>';
+        foreach ($news as $item) {
+          $itemUrl = drupal_get_path_alias('node/'.$item->nid);
+          $nodes .= '<li><a href="'.$itemUrl.'">'.$item->title.'</a></li>';
+        }
+        $nodes .= '</ul>';
+      }
+      $content .= '<li><a href="'.$url.'">'.$link['link_title'].'</a>'.$nodes.'</li>';
+    }
+  }
+
+  $content .= '</ul>';
+
+  $catalog = menu_load_links('menu-categories');
+
+  $content .= '<h3>Категории товаров</h3><ul>';
+
+  foreach ($catalog as $link) {
+    if ($link['plid'] == 0 && $link['hidden'] == 0) {
+      $tid = explode('/', $link['link_path']);
+      $tid = $tid[2];
+      $url = drupal_get_path_alias($link['link_path']);
+      $nodes = '';
+      $products = db_query("
+      SELECT n.title, n.nid FROM node AS n INNER JOIN field_data_field_category fc ON fc.entity_id = n.nid  WHERE type = 'item' AND status = 1 AND fc.field_category_tid = ".$tid."
+      ")->fetchAll();
+
+      $nodes .= '<ul>';
+      foreach ($products as $item) {
+        $itemUrl = drupal_get_path_alias('node/'.$item->nid);
+        $nodes .= '<li><a href="'.$itemUrl.'">'.$item->title.'</a></li>';
+      }
+      $nodes .= '</ul>';
+      $content .= '<li><a href="'.$url.'">'.$link['link_title'].'</a>'.$nodes.'</li>';
+    }
+  }
+
+  return $content;
+}

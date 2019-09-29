@@ -1,0 +1,210 @@
+.page-berloga-price h1 a,
+.page-admin-berloga-price h1 a {
+  display: inline-block;
+  margin-right: 30px;
+}
+.page-berloga-price form,
+.page-admin-berloga-price form {
+  width: 1000px;
+  margin: 20px auto;
+  background: rgba(5, 247, 26, 0.2);
+  padding: 10px 20px;
+  font-size: 14px;
+}
+.page-admin-berloga-price form {
+  width: auto;
+}
+.page-berloga-price form input,
+.page-berloga-price form select,
+.page-admin-berloga-price input,
+.page-admin-berloga-price select {
+  margin-left: 10px;
+}
+.page-berloga-price form input,
+.page-admin-berloga-price input {
+  border: 1px solid #CCCCCC;
+}
+.page-admin-berloga-price input[type="submit"] {
+  background: green;
+  padding: 0px 6px;
+  border: 2px solid green;
+  cursor: pointer;
+  color: #fff;
+  text-transform: uppercase;
+}
+.page-berloga-price h1 a img,
+.page-admin-berloga-price h1 a img {
+  height: 35px;
+  width: auto;
+}
+.page-berloga-price h1,
+.page-admin-berloga-price h1 {
+  color: black;
+}
+.page-berloga-price .content,
+.page-admin-berloga-price .content {
+  padding: 60px;
+  font-family: Arial;
+}
+.page-admin-berloga-price .content {
+  padding: 0;
+}
+.page-berloga-price .content h1,
+.page-admin-berloga-price .content h1 {
+  text-align: left;
+  text-transform: uppercase;
+  width: 1000px;
+  margin: 20px auto;
+}
+.page-admin-berloga-price .content h1 {
+  margin: 0 0 20px;
+  font-size: 36px;
+  width: auto;
+}
+.page-berloga-price .content h2,
+.page-admin-berloga-price .content h2 {
+  font-family: Arial;
+  width: 1000px;
+  margin: 20px auto;
+  font-size: 18px;
+}
+.page-admin-berloga-price .content h2 {
+  width: auto;
+  margin: 0;
+  font-weight: normal;
+}
+.price-table {
+  width: 1000px;
+  margin: 0 auto;
+}
+.page-admin-berloga-price .price-table {
+  width: 100%;
+}
+.price-table tr {
+  border-bottom: 1px solid #ddd;
+}
+.price-table tr:hover {
+  background: rgba(0,0,0,0.1);
+}
+.price-table td {
+  height: 50px;
+}
+.price-table thead {
+  background: gray;
+  color: white;
+  font-size: 20px;
+}
+.price-table thead th,
+.price-table td {
+  padding: 10px;
+  text-transform: none;
+}
+.product-card {
+  background: rgba(0,0,0,0.01);
+  font-size: 14px;
+}
+.product-card-item {
+
+}
+.product-card-item td:nth-child(4),
+#header-fixed th:nth-child(4) {
+  width: 150px;
+}
+.product-card-item td:nth-child(5),
+#header-fixed th:nth-child(5) {
+  width: 150px;
+}
+.product-card-item td:nth-child(6),
+#header-fixed th:nth-child(6) {
+  width: 100px;
+}
+.product-card-no-item {
+  text-align: center;
+}
+.product-card-no-item p {
+  color: red;
+}
+.price-update {
+  border: none;
+  background: #eee;
+  padding: 10px 20px;
+  width: 100px;
+  text-align: center;
+  border-radius: 6px;
+}
+#header-fixed {
+  position: fixed;
+  top: 0px; display:none;
+  background-color:white;
+  width: 1000px;
+  margin: 30px auto 0;
+  margin-left: calc(50% - 560px);
+}
+.page-admin-berloga-price #header-fixed {
+  position: fixed;
+  top: 0px; display:none;
+  background-color:white;
+  width: 1000px;
+  margin: 30px auto 0;
+  /* margin-left: calc(50% - 560px); */
+}
+.fixed-thead-holder {
+  width: 100%;
+  text-align: center;
+}
+.chache-reminder {
+  position: fixed;
+  bottom: 2px;
+  right: 160px;
+  background: red;
+  color: white;
+  padding: 10px;
+  opacity: 0.7;
+  font-size: 14px;
+  cursor: pointer;
+  width: 520px;
+  border-radius: 10px;
+}
+.chache-reminder:hover {
+  opacity: 1;
+}
+.product-card-link {
+  color: black;
+}
+.card-option-img {
+  width: 45px;
+  height: 98px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.card-option-img img {
+  height: 124px;
+}
+.card-option-img.front img {
+  float: left;
+}
+.card-option-img.back img {
+  float: right;
+}
+.node-type-item .commerce-add-to-cart .attribute-widgets .r-bg-set,
+.node-type-item .commerce-add-to-cart .attribute-widgets .form-item-attributes-field-door-inserts,
+.node-type-item .commerce-add-to-cart .attribute-widgets .icon-question {
+  display: none;
+}
+.node-type-item .commerce-add-to-cart .attribute-widgets .r-field,
+.node-type-item .commerce-add-to-cart .attribute-widgets .descr {
+  background: #e0e0e0;
+  text-decoration: none;
+  padding: 4px;
+}
+.node-type-item .commerce-add-to-cart .attribute-widgets input[type="radio"] + label > div {
+  opacity: 0.3;
+}
+.node-type-item .commerce-add-to-cart .attribute-widgets input[type="radio"]:checked + label > div {
+  opacity: 1;
+  padding: 0;
+  border: 2px solid #da813b;
+}
+.node-type-item .field-label {
+  display: none;
+}
